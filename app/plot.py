@@ -41,7 +41,6 @@ class Plot:
     def plot_camera(self, x, y, z):
         cord = [x, y, z]
         w_p = [121, -30, 70]
-        print(w_p[1]+cord[1]*100)
 
         # Rysujemy punkt i zapisujemy referencję do niego
         camera_point = self.ax.scatter(

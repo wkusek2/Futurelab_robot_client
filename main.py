@@ -9,6 +9,9 @@ from camera.detection import YOLODetector, yolo, yolo1
 import os
 from datetime import datetime
 import time
+import queue
+
+send_queue = asyncio.Queue(100)
 
 
 save = False
@@ -25,9 +28,16 @@ if save:
     print(f"[+] Zapisywanie klatek z kamery 1 do folderu: {camera1_dir}")
 
 
-async def receive_frames(app):
-    uri = "ws://192.168.1.29:8765"  # Update with your server's IP
-    async with websockets.connect(uri) as websocket:
+async def send_time_loop():
+    while True:
+        now = datetime.now().strftime("%H:%M:%S")
+        message = f"Czas serwera: {now}".encode("utf-8")
+        await send_queue.put(message)
+        await asyncio.sleep(1)
+
+
+
+async def receive_frames(app, websocket):
         frame_count = 0
         while True:
             data = await websocket.recv()
@@ -73,8 +83,31 @@ async def receive_frames(app):
 
             
             app.update_camera_frames(frame0, frame1)
+            
+            
+async def send_handler(websocket):
+    try:
+        while True:
+            data =  await send_queue.get()
+            await websocket.send(data)
+            print("Wys")
+            send_queue.task_done()
 
+    except websockets.exceptions.ConnectionClosed:
+        print("Connection closed while sending")
 
+    except Exception as e:
+        print(f"Error in send handler: {e}")
+
+async def websocket_loop(app):
+    uri = "ws://192.168.1.29:8765"  # IP serwera
+    async with websockets.connect(uri) as websocket:
+        # Uruchom równolegle odbieranie i wysyłanie
+        await asyncio.gather(
+            receive_frames(app, websocket),
+            send_handler(websocket),
+            send_time_loop()
+            )
 
 async def main():
     # Initialize the GUI
@@ -84,7 +117,7 @@ async def main():
 
     # Run the GUI and WebSocket receiver concurrently
     await asyncio.gather(
-        receive_frames(app),
+        websocket_loop(app),
         app.run_async()
     )
 

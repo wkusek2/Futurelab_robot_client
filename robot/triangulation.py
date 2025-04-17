@@ -134,13 +134,7 @@ class Triangulation:
             # Oblicz środki obiektów
             center0 = (( (self.obj0[1] + self.obj0[3]) / 2), (self.obj0[0] + self.obj0[2]) / 2)
             center1 = ((self.obj1[1] + self.obj1[3]) / 2,(self.obj1[0] + self.obj1[2]) / 2)
-            print(f"Center0: {center0}")
-            print(f"Center1: {center1}")
 
-
-
-            # Macierze kamer
-            
 
             # Utwórz bezpośrednio macierze projekcji
             P1 = np.hstack((np.eye(3), np.zeros((3, 1))))  # Kamera 1: [I | 0]

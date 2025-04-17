@@ -162,16 +162,13 @@ class App:
 
 
     def triangulation_operation(self):
-        print("Triangulation operation started")
         scale_factor = 4.672916
         scale_factor1 = 2.58125
         
         obj0 = yolo.get_detections_info()
         obj1 = yolo1.get_detections_info()
         if not obj0 or not obj1:
-            print("No objects detected")
             return None
-        print(obj0)
         x_min0, y_min0, x_max0, y_max0 = obj0
         x_min1, y_min1, x_max1, y_max1 = obj1
 
@@ -189,10 +186,9 @@ class App:
             x_max1 * scale_factor1,
             y_max1 * scale_factor
         )
-        print(obj0, obj1)
+
         # Triangulate the points
         if obj0 is None or obj1 is None:
-            print("No objects detected")
             return None
         self.points = self.triangulation.get_3d_position(obj0, obj1)
         return self.points
