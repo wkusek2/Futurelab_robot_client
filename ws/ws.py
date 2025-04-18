@@ -192,8 +192,15 @@ class WebSocketClient:
         """Queue a text message to be sent"""
         if isinstance(message, str):
             message = message.encode('utf-8')
-        await self.send_queue.put(('msg', message))
+        await self.send_queue.put((message))
     
     async def send_binary(self, data):
         """Queue binary data to be sent"""
         await self.send_queue.put(('img', data))
+
+    def put_in_queue(self, message_type, data):
+        """Put a message in the send queue"""
+        if self.running:
+            asyncio.run_coroutine_threadsafe(self.send_queue.put((message_type, data)), asyncio.get_event_loop())
+        else:
+            print("[-] WebSocket client is not running")

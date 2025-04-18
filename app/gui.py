@@ -7,7 +7,6 @@ import asyncio
 import time
 import math
 from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
-
 import app.ui as ui
 from app.plot import Plot
 from robot.robot import Robot
@@ -82,7 +81,7 @@ class App:
         ########## plot_robot
         self.plot.plot_robot(self.robot, math.pi, -math.pi/2, 0, 0)
         self.canvas = FigureCanvasTkAgg(self.plot.fig, master=self.camera_frame)
-        self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=2, columnspan=4)
+        self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=4, columnspan=4)
 
         #################################
         ########## data
@@ -90,6 +89,33 @@ class App:
         
         # Initialize the camera point as None so we can update it later
         self.camera_point = None
+
+        #########################
+        ########## ws_client
+        self.ws_client = None  # Placeholder for WebSocket client
+
+        ##########################
+        ########## database
+        self.database = None  # Placeholder for database
+        
+        ##########################
+        ########## Sliders
+
+        
+        self.offset1 = ui.slider(self.camera_frame, 0, 8, 0, 4096, 180, 0, 0, 1,
+                                 "nsew",dataType="offset0", database=self.database)
+        self.offset2 = ui.slider(self.camera_frame, 1, 8, 0, 4096, 180, 0, 1, 1,
+                                 "nsew",dataType="offset1", database=self.database)
+        self.offset3 = ui.slider(self.camera_frame, 2, 8, 0, 4096, 180, 0, 2, 1,
+                                 "nsew",dataType="offset2", database=self.database)
+        self.offset4 = ui.slider(self.camera_frame, 3, 8, 0, 4096, 180, 0, 3, 1,
+                                 "nsew",dataType="offset3", database=self.database)
+        self.offset5 = ui.slider(self.camera_frame, 4, 8, 0, 4096, 180, 0, 4, 1,
+                                 "nsew",dataType="offset4", database=self.database)
+
+        
+         
+        
 
     def gui(self):
         """Allocate buttons and objects on window"""
@@ -107,6 +133,11 @@ class App:
         button2.grid(row=0, column=1, padx=5, pady=10)
         button3 = ctk.CTkButton(self.navbar, text="Data", command=lambda: show_frame(self.data_frame))
         button3.grid(row=0, column=2, padx=5, pady=10)
+
+        ################
+        ########## SLIDERS
+        
+        
 
         # show main frame by default
         show_frame(self.main_frame)
@@ -202,3 +233,18 @@ class App:
 
             # Schedule next update
             await asyncio.sleep(0.25)
+    
+    def set_websocket_client(self, client):
+        """Set the WebSocket client for the application."""
+        self.ws_client = client
+
+    async def send_to_queue(self, message_type, message):
+        """Send a message to the WebSocket queue."""
+        if self.ws_client:
+            await self.ws_client.put_in_queue(message_type, message)
+        else:
+            print("WebSocket client not initialized.")
+
+    def set_database(self, database):
+        """Set the database for the application."""
+        self.database = database

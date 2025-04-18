@@ -182,7 +182,23 @@ class table:
 class slider:
     selected_slider = None  # Zmienna klasowa do przechowywania wybranego suwaka
 
-    def __init__(self, window, row, column, min, max, padx, pady, id_number, text, move_function, com=None, cam=None, value=None):
+    def __init__(
+            self,
+            window,
+            row,
+            column,
+            min,
+            max,
+            padx,
+            pady,
+            id_number,
+            text,
+            move_function,
+            dataType,
+            database,
+            value=None,
+            ):
+        
         self.window = window
         self.row = row
         self.column = column
@@ -193,6 +209,8 @@ class slider:
         self.id_number = id_number
         self.text = text
         self.move_function = move_function
+        self.dataType = dataType
+        self.database = database
 
         # Utworzenie etykiety wyświetlającej wartość slidera
         self.label_min = ctk.CTkLabel(master=self.window, text=str(self.min))
@@ -213,7 +231,7 @@ class slider:
 
         # Aktualizacja etykiety przy zmianie wartości suwaka
         self.slider.bind('<Motion>', self.update_label_from_slider)
-        self.slider.bind('<ButtonRelease-1>', command=lambda event: self.on_slider_value_changed(com, cam))  # Wywołanie po zwolnieniu przycisku
+        self.slider.bind('<ButtonRelease-1>', command=lambda event: self.on_slider_value_changed(self.dataType, self.database))  # Wywołanie po zwolnieniu przycisku
 
         if value != None:
             self.slider.set(value)
@@ -243,17 +261,13 @@ class slider:
     def update_label(self, value):
         self.label_value.configure(text=f"ID: {self.id_number} {self.text} {int(float(value))}")
 
-    def on_slider_value_changed(self, com, cam):
-        if self.move_function == 1 and com != None:
+    def on_slider_value_changed(self, dataType,database):
+        if self.move_function == 1 and database:
             if slider.selected_slider:
-                id_number = slider.selected_slider.id_number
-                position = slider.selected_slider.slider.get()
-                com.move(id_number, position)
-        if self.move_function == 2 and cam != None:
-            if slider.selected_slider:
-                id_number = slider.selected_slider.id_number
-                position = slider.selected_slider.slider.get() 
-                cam.change_param(id_number, position)      
+                print(f"Slider ID: {slider.selected_slider.id_number} Value: {slider.selected_slider.slider.get()}")
+                id = slider.selected_slider.id_number
+                data = slider.selected_slider.slider.get()
+                database.set(dataType, data, id)   
 
     def get(self):
         return self.slider.get()

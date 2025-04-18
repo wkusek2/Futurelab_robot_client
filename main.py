@@ -2,12 +2,15 @@ import asyncio
 from app.gui import App
 from ws.frame_processor import FrameProcessor
 from ws.ws import WebSocketClient
+from database.database import Database
 
 # Configuration
 WEBSOCKET_URI = "ws://192.168.1.29:8765"
 SAVE_FRAMES = False
 CAMERA_WIDTH = 432
 CAMERA_HEIGHT = 768
+
+
 
 async def main():
     """Main application function that coordinates GUI and WebSocket communication"""
@@ -44,6 +47,11 @@ async def main():
         frame_callback=handle_frame_data,
         message_callback=lambda msg: print(f"Received message: {msg}")
     )
+
+    db = Database()  # Initialize the database
+
+    app.set_websocket_client = ws_client  # Store the WebSocket client in the app for potential use
+    app.set_database = db  # Store the database in the app for potential use    
     
     # Run all components concurrently
     try:
