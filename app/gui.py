@@ -10,11 +10,9 @@ from matplotlib.backends.backend_tkagg import FigureCanvasTkAgg
 
 import app.ui as ui
 from app.plot import Plot
-# from app.conn import Communicator
 from robot.robot import Robot
 from robot.triangulation import Triangulation as Tri
 import numpy as np
-from camera.detection import yolo, yolo1
 
 
 # COLUMNS_TEXT PROB NOT NEEDED
@@ -25,10 +23,10 @@ class App:
     def __init__(self, between_cameras, camera_mode_width, camera_mode_height) -> None:
         ########################
         ############## GUI CONST
-        ctk.set_appearance_mode("dark")  # Ustawienie ciemnego trybu
-        ctk.set_default_color_theme("blue")  # Ustawienie domyślnego motywu kolorystycznego
+        ctk.set_appearance_mode("dark")  # Set dark mode
+        ctk.set_default_color_theme("blue")  # Set default color theme
 
-        self.root = ctk.CTk()  # Użycie CTk zamiast Tk
+        self.root = ctk.CTk()  # Use CTk instead of Tk
         self.root.title("Robot Arm Inverse Kinematics")
         self.root.geometry("2880x1800")
 
@@ -62,25 +60,17 @@ class App:
 
         ###############################
         ########## camera
-
         self.camera_mode_width = camera_mode_width
         self.camera_mode_height = camera_mode_height
 
         self.camera0_label = ctk.CTkLabel(self.camera_frame, text="")
-        self.camera0_label.grid(row=0, column=8, padx=1,rowspan=5, pady=10)
+        self.camera0_label.grid(row=0, column=8, padx=1, rowspan=5, pady=10)
 
         self.camera1_label = ctk.CTkLabel(self.camera_frame, text="")
-        self.camera1_label.grid(row=0, column=9, padx=1,rowspan=5, pady=10)
+        self.camera1_label.grid(row=0, column=9, padx=1, rowspan=5, pady=10)
 
         ########################
-        ########## GRID POSITIONS
-
-        ########################
-        ########## connection
-
-        ############################
         ########## positions
-
         self.robot_position_label = ctk.CTkLabel(self.camera_frame, text="Robot Position")
         self.robot_position_label.grid(row=5, column=5, padx=1, pady=10)
 
@@ -88,10 +78,8 @@ class App:
                                         "End-Effector Coordinates:\nX: 0.00 \nY: 0.00 \nZ: 0.00")
         self.label_coord.grid(row=6, column=5, rowspan=2, padx=10, pady=0, sticky="nsew")
 
-
         ############################
         ########## plot_robot
-
         self.plot.plot_robot(self.robot, math.pi, -math.pi/2, 0, 0)
         self.canvas = FigureCanvasTkAgg(self.plot.fig, master=self.camera_frame)
         self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=2, columnspan=4)
@@ -99,9 +87,12 @@ class App:
         #################################
         ########## data
         self.table = ui.table(self.data_frame, COLUMNS_TEXT, "headings", COLUMNS_HEADER, 160, 6, 16, 20, 20, 'nsew')
+        
+        # Initialize the camera point as None so we can update it later
+        self.camera_point = None
 
     def gui(self):
-        "Allocate buttons and objects on window"
+        """Allocate buttons and objects on window"""
 
         ########################
         ########## CREATE FRAMES (TABS ON NAVBAR)
@@ -114,107 +105,100 @@ class App:
         button1.grid(row=0, column=0, padx=5, pady=10)
         button2 = ctk.CTkButton(self.navbar, text="Camera", command=lambda: show_frame(self.camera_frame))
         button2.grid(row=0, column=1, padx=5, pady=10)
-        button3 = ctk.CTkButton(self.navbar, text="Dane", command=lambda: show_frame(self.data_frame))
+        button3 = ctk.CTkButton(self.navbar, text="Data", command=lambda: show_frame(self.data_frame))
         button3.grid(row=0, column=2, padx=5, pady=10)
 
         # show main frame by default
         show_frame(self.main_frame)
 
-        ########################### 
-        ########## MAIN FRAME
-
-        ########################
-        ########## CAMERA SECTION
-
-        ########################
-        ########## CONNECTION SECTION
-
-        ###########################
-        ########## DATA FRAME
-
-
-
     async def run_async(self):
         """Run the GUI in an asynchronous loop."""
         self.gui()
-        asyncio.create_task(self.update_camera())
+        asyncio.create_task(self.update_camera_visualization())
         while True:
             self.canvas.draw()
             self.root.update()
             await asyncio.sleep(0.01)
 
-########################################################
-####### camera
-
     def update_camera_frames(self, frame0, frame1):
         """Update the GUI with new camera frames."""
+        # Resize frames to fit in the GUI
         frame0_resized = cv2.resize(frame0, (self.camera_mode_width, self.camera_mode_height))
         frame1_resized = cv2.resize(frame1, (self.camera_mode_width, self.camera_mode_height))
 
+        # Convert frames to ImageTk format
         frame0_image = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(frame0_resized, cv2.COLOR_BGR2RGB)))
         frame1_image = ImageTk.PhotoImage(image=Image.fromarray(cv2.cvtColor(frame1_resized, cv2.COLOR_BGR2RGB)))
 
+        # Update labels with new images
         self.camera0_label.configure(image=frame0_image)
-        self.camera0_label.image = frame0_image
+        self.camera0_label.image = frame0_image  # Keep a reference to prevent garbage collection
 
         self.camera1_label.configure(image=frame1_image)
-        self.camera1_label.image = frame1_image
-
+        self.camera1_label.image = frame1_image  # Keep a reference to prevent garbage collection
 
     def triangulation_operation(self):
+        """Perform triangulation to calculate 3D position from detections"""
         scale_factor = 4.672916
         scale_factor1 = 2.58125
         
-        obj0 = yolo.get_detections_info()
-        obj1 = yolo1.get_detections_info()
+        # Get detection information from YOLO
+        obj0 = self.get_detection_from_yolo(0)
+        obj1 = self.get_detection_from_yolo(1)
+        
         if not obj0 or not obj1:
             return None
-        x_min0, y_min0, x_max0, y_max0 = obj0
-        x_min1, y_min1, x_max1, y_max1 = obj1
-
+            
+        # Scale the detection coordinates
         obj0 = (
-            x_min0 * scale_factor1,
-            y_min0 * scale_factor,
-            x_max0 * scale_factor1,
-            y_max0 * scale_factor
+            obj0[0] * scale_factor1,
+            obj0[1] * scale_factor,
+            obj0[2] * scale_factor1,
+            obj0[3] * scale_factor
         )
-        
         
         obj1 = (
-            x_min1 * scale_factor1,
-            y_min1 * scale_factor,
-            x_max1 * scale_factor1,
-            y_max1 * scale_factor
+            obj1[0] * scale_factor1,
+            obj1[1] * scale_factor,
+            obj1[2] * scale_factor1,
+            obj1[3] * scale_factor
         )
 
-        # Triangulate the points
-        if obj0 is None or obj1 is None:
-            return None
+        # Calculate 3D position using triangulation
         self.points = self.triangulation.get_3d_position(obj0, obj1)
         return self.points
     
-    async def update_camera(self):
+    def get_detection_from_yolo(self, camera_index):
+        """Get detection information from YOLO for a specific camera"""
+        from camera.detection import yolo, yolo1
+        
+        if camera_index == 0:
+            return yolo.get_detections_info()
+        else:
+            return yolo1.get_detections_info()
+    
+    async def update_camera_visualization(self):
+        """Update the 3D visualization based on camera triangulation"""
         while True:
+            # Get triangulated coordinates
             c = self.triangulation_operation()
             if c is None:
                 c = [0, 0, 0]  # Default value if triangulation fails
 
-
-            # Jeśli istnieje poprzedni punkt, usuń go
-            if hasattr(self, 'camera_point'):
+            # Remove previous camera point if it exists
+            if self.camera_point is not None:
                 self.camera_point.remove()
 
-            # Narysuj nowy punkt i zapisz referencję
+            # Draw new point and save reference
             self.camera_point = self.plot.plot_camera(c[0], c[1], c[2])
+            
+            # Calculate distance
             distance = (np.linalg.norm(c) * 100) * 1
 
-            # Aktualizacja canvas
-            self.canvas.draw_idle()  # używamy draw_idle() dla lepszej wydajności
+            # Update canvas and display information
+            self.canvas.draw_idle()  # Use draw_idle() for better performance
             self.label_coord.configure(text=f"Calculated distance: \n{distance:.2f} [cm] \n" + 
-                                           f"X: {c[0]:.2f}, Y: {c[1]:.2f}, Z: {c[2]:.2f}")
+                                         f"X: {c[0]:.2f}, Y: {c[1]:.2f}, Z: {c[2]:.2f}")
 
-            # Zaplanuj następną aktualizację
+            # Schedule next update
             await asyncio.sleep(0.25)
-
-
-        
