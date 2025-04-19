@@ -19,7 +19,7 @@ COLUMNS_TEXT = ("Id", "Voltage", "Current", "Temperature", "Position", "Load")
 COLUMNS_HEADER = ["Id", "Voltage", "Current", "Temperature", "Position", "Load"]
 
 class App:
-    def __init__(self, between_cameras, camera_mode_width, camera_mode_height) -> None:
+    def __init__(self, between_cameras, camera_mode_width, camera_mode_height, database, ws) -> None:
         ########################
         ############## GUI CONST
         ctk.set_appearance_mode("dark")  # Set dark mode
@@ -92,26 +92,31 @@ class App:
 
         #########################
         ########## ws_client
-        self.ws_client = None  # Placeholder for WebSocket client
+        self.ws_client = ws  # Placeholder for WebSocket client
 
         ##########################
         ########## database
-        self.database = None  # Placeholder for database
+        self.database = database # Placeholder for database
         
         ##########################
         ########## Sliders
 
         
-        self.offset1 = ui.slider(self.camera_frame, 0, 8, 0, 4096, 180, 0, 0, 1,
-                                 "nsew",dataType="offset0", database=self.database)
-        self.offset2 = ui.slider(self.camera_frame, 1, 8, 0, 4096, 180, 0, 1, 1,
-                                 "nsew",dataType="offset1", database=self.database)
-        self.offset3 = ui.slider(self.camera_frame, 2, 8, 0, 4096, 180, 0, 2, 1,
-                                 "nsew",dataType="offset2", database=self.database)
-        self.offset4 = ui.slider(self.camera_frame, 3, 8, 0, 4096, 180, 0, 3, 1,
-                                 "nsew",dataType="offset3", database=self.database)
-        self.offset5 = ui.slider(self.camera_frame, 4, 8, 0, 4096, 180, 0, 4, 1,
-                                 "nsew",dataType="offset4", database=self.database)
+        self.offset1 = ui.slider(self.camera_frame, 0, 10, 0, 4096, 180, 0, 0, 1,
+                                 "nsew",dataType="offset", database=self.database)
+        self.offset2 = ui.slider(self.camera_frame, 1, 10, 0, 4096, 180, 0, 1, 1,
+                                 "nsew",dataType="offset", database=self.database)
+        self.offset3 = ui.slider(self.camera_frame, 2, 10, 0, 4096, 180, 0, 2, 1,
+                                 "nsew",dataType="offset", database=self.database)
+        self.offset4 = ui.slider(self.camera_frame, 3, 10, 0, 4096, 180, 0, 3, 1,
+                                 "nsew",dataType="offset", database=self.database)
+        self.offset5 = ui.slider(self.camera_frame, 4, 10, 0, 4096, 180, 0, 4, 1,
+                                 "nsew",dataType="offset", database=self.database)
+        
+        self.servo_1 = ui.slider(self.camera_frame, 5, 10, 0, 180, 180, 0, 0, 1,
+                                 "nsew",dataType="servo", ws=self.ws_client)
+        self.servo_2 = ui.slider(self.camera_frame, 6, 10, 0, 180, 180, 0, 1, 1,
+                                 "nsew",dataType="servo", ws=self.ws_client)
 
         
          
@@ -234,9 +239,7 @@ class App:
             # Schedule next update
             await asyncio.sleep(0.25)
     
-    def set_websocket_client(self, client):
-        """Set the WebSocket client for the application."""
-        self.ws_client = client
+
 
     async def send_to_queue(self, message_type, message):
         """Send a message to the WebSocket queue."""
@@ -245,6 +248,3 @@ class App:
         else:
             print("WebSocket client not initialized.")
 
-    def set_database(self, database):
-        """Set the database for the application."""
-        self.database = database

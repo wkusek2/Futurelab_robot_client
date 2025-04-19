@@ -168,10 +168,11 @@ class WebSocketClient:
                     break
                 elif message_type == 'msg-servo-st':
                     if self.websocket and self.websocket.open:
-                        await self.websocket.send([message_type,data])
+                        await self.websocket.send(f"{message_type}.{data}")
                 elif message_type == 'msg-servo-9g':
                     if self.websocket and self.websocket.open:
-                        await self.websocket.send([message_type,data])
+                        print(data)
+                        await self.websocket.send(f"{message_type}.{data}")
                 elif message_type == 'img':
                     if self.websocket and self.websocket.open:
                         await self.websocket.send(data)

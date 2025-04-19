@@ -1,6 +1,7 @@
 import customtkinter as ctk
 import tkinter as ttk
 from tkinter import ttk
+import asyncio
 
 class button:
     def __init__(self, window, text_var=None, textvariable_var=None, command_var=None, row=0, column=0, padx=0, pady=0, sticky='nsew', color=None):
@@ -195,8 +196,9 @@ class slider:
             text,
             move_function,
             dataType,
-            database,
+            database=None,
             value=None,
+            ws=None
             ):
         
         self.window = window
@@ -211,6 +213,9 @@ class slider:
         self.move_function = move_function
         self.dataType = dataType
         self.database = database
+        self.ws = ws
+        self.step_delay = 0.01  # Opóźnienie między krokami w sekundach
+        self.step_size = 1
 
         # Utworzenie etykiety wyświetlającej wartość slidera
         self.label_min = ctk.CTkLabel(master=self.window, text=str(self.min))
@@ -231,7 +236,8 @@ class slider:
 
         # Aktualizacja etykiety przy zmianie wartości suwaka
         self.slider.bind('<Motion>', self.update_label_from_slider)
-        self.slider.bind('<ButtonRelease-1>', command=lambda event: self.on_slider_value_changed(self.dataType, self.database))  # Wywołanie po zwolnieniu przycisku
+        self.slider.bind('<ButtonRelease-1>', command=lambda event: self.on_slider_value_changed(
+            self.dataType, self.database, self.ws))  # Wywołanie po zwolnieniu przycisku
 
         if value != None:
             self.slider.set(value)
@@ -261,13 +267,24 @@ class slider:
     def update_label(self, value):
         self.label_value.configure(text=f"ID: {self.id_number} {self.text} {int(float(value))}")
 
-    def on_slider_value_changed(self, dataType,database):
-        if self.move_function == 1 and database:
+    def on_slider_value_changed(self, dataType, database, ws):
+        if database:
             if slider.selected_slider:
-                print(f"Slider ID: {slider.selected_slider.id_number} Value: {slider.selected_slider.slider.get()}")
                 id = slider.selected_slider.id_number
                 data = slider.selected_slider.slider.get()
-                database.set(dataType, data, id)   
+                database.set(dataType, data, id)
+        elif ws:
+            if slider.selected_slider:
+                id = slider.selected_slider.id_number
+                data = slider.selected_slider.slider.get()
+                msg = None
+                if id == 0:
+                    msg = ['msg-servo-9g',f"*2,{int(data)},{self.step_delay},{self.step_size}*"]
+                elif id == 1:
+                    msg = ['msg-servo-9g',f"*5,{int(data)},{self.step_delay},{self.step_size}*"]
+                if msg:
+                    print(msg)
+                    asyncio.create_task(ws.send_queue.put(msg))
 
     def get(self):
         return self.slider.get()

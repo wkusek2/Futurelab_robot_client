@@ -5,7 +5,7 @@ from ws.ws import WebSocketClient
 from database.database import Database
 
 # Configuration
-WEBSOCKET_URI = "ws://192.168.1.29:8765"
+WEBSOCKET_URI = "ws://192.168.100.12:8765"
 SAVE_FRAMES = False
 CAMERA_WIDTH = 432
 CAMERA_HEIGHT = 768
@@ -14,9 +14,9 @@ CAMERA_HEIGHT = 768
 
 async def main():
     """Main application function that coordinates GUI and WebSocket communication"""
-    # Initialize the GUI app
-    app = App(between_cameras=0, camera_mode_width=CAMERA_WIDTH, camera_mode_height=CAMERA_HEIGHT)
+
     
+
     # Initialize frame processor
     frame_processor = FrameProcessor(save_frames=SAVE_FRAMES)
     
@@ -48,10 +48,16 @@ async def main():
         message_callback=lambda msg: print(f"Received message: {msg}")
     )
 
-    db = Database()  # Initialize the database
+    db = Database()
+    # Initialize the GUI app
+    app = App(between_cameras=0, camera_mode_width=CAMERA_WIDTH, camera_mode_height=CAMERA_HEIGHT, database=db, ws=ws_client)
+    
 
-    app.set_websocket_client = ws_client  # Store the WebSocket client in the app for potential use
-    app.set_database = db  # Store the database in the app for potential use    
+    # Initialize frame processor
+    frame_processor = FrameProcessor(save_frames=SAVE_FRAMES)
+
+
+ # Store the database in the app for potential use    
     
     # Run all components concurrently
     try:
