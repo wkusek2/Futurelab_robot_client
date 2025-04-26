@@ -75,7 +75,7 @@ class App:
 
         self.label_coord = ctk.CTkLabel(self.camera_frame, text=
                                         "End-Effector Coordinates:\nX: 0.00 \nY: 0.00 \nZ: 0.00")
-        self.label_coord.grid(row=6, column=5, rowspan=2, padx=10, pady=0, sticky="nsew")
+        self.label_coord.grid(row=3, column=6, rowspan=2, padx=10, pady=0, sticky="nsew")
 
         ############################
         ########## plot_robot
@@ -83,6 +83,11 @@ class App:
         self.canvas = FigureCanvasTkAgg(self.plot.fig, master=self.camera_frame)
         self.canvas.get_tk_widget().grid(column=3, row=0, rowspan=4, columnspan=4)
 
+        self.entry_x = ui.text_gap(self.camera_frame, 150, 0, 0, 25, 10 ,"e")
+        self.entry_y = ui.text_gap(self.camera_frame, 150, 1, 0, 25, 10 ,"e")
+        self.entry_z = ui.text_gap(self.camera_frame, 150, 2, 0, 25, 10 ,"e")
+
+        btn_compute = ui.button(self.camera_frame,"Oblicz", None, self.update_robot, 5, 0, 10, 10)
         #################################
         ########## data
         self.table = ui.table(self.data_frame, COLUMNS_TEXT, "headings", COLUMNS_HEADER, 160, 6, 16, 20, 20, 'nsew')
@@ -227,6 +232,8 @@ class App:
 
             # Draw new point and save reference
             self.camera_point = self.plot.plot_camera(c[0], c[1], c[2])
+            # self.plot_camera = self.plot.camera_vis()
+
             
             # Calculate distance
             distance = (np.linalg.norm(c) * 100) * 1
@@ -238,6 +245,18 @@ class App:
 
             # Schedule next update
             await asyncio.sleep(0.25)
+
+    def update_robot(self):
+        theta1, theta2, theta3, theta4, pos1, pos2, pos3, pos4 = self.robot.update_robot(self.entry_x.get(), self.entry_y.get(), self.entry_z.get())
+
+        self.plot.plot_robot(self.robot, theta1, theta2, theta3, theta4)
+        self.communicator.move_to_position(pos1, pos2, pos3, pos4, self.offset_1, self.offset_2, self.offset_3, self.offset_4)
+
+        self.label_coord.configure(text=f"End-Effector Coordinates:\nX: {self.robot.rx:.2f} \nY: {self.robot.ry:.2f} \nZ: {self.robot.rz:.2f}")
+        self.update_table()
+        self.plot.fig.canvas.draw_idle()
+
+    
     
 
 

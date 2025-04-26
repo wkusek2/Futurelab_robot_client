@@ -5,7 +5,7 @@ from ws.ws import WebSocketClient
 from database.database import Database
 
 # Configuration
-WEBSOCKET_URI = "ws://192.168.100.12:8765"
+WEBSOCKET_URI = "ws://192.168.1.63:8765"
 SAVE_FRAMES = False
 CAMERA_WIDTH = 432
 CAMERA_HEIGHT = 768
